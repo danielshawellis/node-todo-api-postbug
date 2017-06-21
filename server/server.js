@@ -1,4 +1,4 @@
-require('./config/config.js');
+require('./config/config');
 
 const _ = require('lodash');
 const express = require('express');
@@ -10,7 +10,7 @@ var {Todo} = require('./models/todo');
 var {User} = require('./models/user');
 
 var app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
@@ -62,11 +62,11 @@ app.delete('/todos/:id', (req, res) => {
   Todo.findByIdAndRemove(id).then((todo) => {
     if (!todo) {
       return res.status(404).send();
-    } else {
-      return res.send({todo});
     }
+
+    res.send({todo});
   }).catch((e) => {
-    return res.status(404).send(e);
+    res.status(400).send();
   });
 });
 
@@ -90,10 +90,23 @@ app.patch('/todos/:id', (req, res) => {
       return res.status(404).send();
     }
 
-    //could also be written: res.send({todo: todo}); below is ES6 
     res.send({todo});
   }).catch((e) => {
     res.status(400).send();
+  })
+});
+
+// POST /users
+app.post('/users', (req, res) => {
+  var body = _.pick(req.body, ['email', 'password']);
+  var user = new User(body);
+
+  user.save().then(() => {
+    return user.generateAuthToken();
+  }).then((token) => {
+    res.header('x-auth', token).send(user);
+  }).catch((e) => {
+    res.status(400).send(e);
   })
 });
 
